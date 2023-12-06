@@ -47,3 +47,9 @@ The **kernel aware warp scheduler** is the new scheduler that should be created.
 |bfs|-0.55|-0.032|-0.37|0.3|
 
 ## Grpahs
+![WhatsApp Image 2023-12-06 at 6 23 05 PM](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/825a9cec-833a-4daa-9e0e-4131fee01e7a)
+![WhatsApp Image 2023-12-06 at 6 23 04 PM](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/d1c36587-e516-4402-86a5-d25e0f53d076) 
+![WhatsApp Image 2023-12-06 at 6 23 05 PM (1)](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/ba899d72-266c-4a15-8a44-6077fc50d96e)
+![WhatsApp Image 2023-12-06 at 6 23 03 PM](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/a99fc389-d75c-4e4f-9121-9ae0926e3371)   <br>
+![WhatsApp Image 2023-12-06 at 6 23 04 PM (2)](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/6ec7e162-31f6-42e8-9d6a-88d43435139f) <br>
+![WhatsApp Image 2023-12-06 at 6 23 04 PM (1)](https://github.com/Vidyadhari43/KAWS_COA_endsem/assets/106026251/7c1d2344-ba5e-4640-83aa-f1efcb703229)

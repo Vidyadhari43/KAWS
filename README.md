@@ -1,2 +1,3 @@
 # KAWS
-Implementation of kernel aware wrap Scheduler and warp sharing mechanism
+|**Benchmarks**|**scheduler type**|**cycle**| |**ipc**| |
+|--|--|with warpsharing|without warpsharing|with warpsharing|withou warpsharing|

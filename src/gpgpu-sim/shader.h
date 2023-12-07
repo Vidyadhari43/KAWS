@@ -127,7 +127,7 @@ class shd_warp_t {
             unsigned dynamic_warp_id) {
     m_cta_id = cta_id;
     m_warp_id = wid;
-    m_dynamic_warp_id = dynamic_warp_id;
+    m_dynamic_warp_id = dynamic_warp_id; //fprintf(stderr,"in shader.h %u\n",m_dynamic_warp_id);
     m_next_pc = start_pc;
     assert(n_completed >= active.count());
     assert(n_completed <= m_warp_size);
@@ -139,7 +139,10 @@ class shd_warp_t {
     m_cdp_latency = 0;
     m_cdp_dummy = false;
   }
-
+  	/*std::vector<shd_warp_t *> m_warp;
+	void update_m_warp(std::vector<shd_warp_t *> m_warp1){
+		m_warp=m_warp1;//.resize(m_warp1.begin(),m_warp1.end());
+	}*/
   bool functional_done() const;
   bool waiting();  // not const due to membar
   bool hardware_done() const;
@@ -233,10 +236,28 @@ class shd_warp_t {
     m_inst_in_pipeline--;
   }
 
-  unsigned get_cta_id() const { return m_cta_id; }
-
-  unsigned get_dynamic_warp_id() const { return m_dynamic_warp_id; }
+  
+  	//added for updating ctas progress
+	/*unsigned updated_progress;
+	void update_cta_progress(unsigned cta_hw_id, unsigned issued){
+		//updated_progress=current_progress_value+issued;
+		for(unsigned i=0;i<m_warp.size();i++){
+			if((m_warp[i]->get_warp_id())<((unsigned)-1)){
+			if((m_warp[i]->get_cta_id())==cta_hw_id ){
+				m_warp[i]->updated_progress+=issued;
+			}}
+		}
+	}
+	unsigned get_progress(unsigned cta_hw_id){
+		return updated_progress;
+	}*/
+	unsigned get_cta_id() const { return m_cta_id; }
+  unsigned get_dynamic_warp_id() const { 
+  //fprintf(stderr,"in shader.h  in get_dynamic_warp_id %u\n",m_dynamic_warp_id);
+  return m_dynamic_warp_id; }
   unsigned get_warp_id() const { return m_warp_id; }
+	
+  
 
   class shader_core_ctx * get_shader() { return m_shader; }
  private:
@@ -309,17 +330,19 @@ enum scheduler_prioritization_type {
   SCHEDULER_PRIORITIZATION_GTLRR,     // Greedy Then Loose Round Robin
   SCHEDULER_PRIORITIZATION_GTY,       // Greedy Then Youngest
   SCHEDULER_PRIORITIZATION_OLDEST,    // Oldest First
-  SCHEDULER_PRIORITIZATION_YOUNGEST,  // Youngest First
+  SCHEDULER_PRIORITIZATION_YOUNGEST,  // Youngest First 
+  SCHEDULER_PRIORITIZATION_KAWS,      //kaws
 };
 
 // Each of these corresponds to a string value in the gpgpsim.config file
 // For example - to specify the LRR scheudler the config must contain lrr
 enum concrete_scheduler {
   CONCRETE_SCHEDULER_LRR = 0,
-  CONCRETE_SCHEDULER_GTO,
+  CONCRETE_SCHEDULER_GTO, 
   CONCRETE_SCHEDULER_TWO_LEVEL_ACTIVE,
   CONCRETE_SCHEDULER_WARP_LIMITING,
-  CONCRETE_SCHEDULER_OLDEST_FIRST,
+  CONCRETE_SCHEDULER_OLDEST_FIRST,  
+  CONCRETE_SCHEDULER_KAWS,
   NUM_CONCRETE_SCHEDULERS
 };
 
@@ -377,6 +400,7 @@ class scheduler_unit {  // this can be copied freely, so can be used in std
     // No greedy scheduling based on last to issue. Only the priority function
     // determines priority
     ORDERED_PRIORITY_FUNC_ONLY,
+    ORDERED_PRIORITY_KAWS,
     NUM_ORDERING,
   };
   template <typename U>
@@ -385,7 +409,9 @@ class scheduler_unit {  // this can be copied freely, so can be used in std
       const typename std::vector<U>::const_iterator &last_issued_from_input,
       unsigned num_warps_to_add, OrderingType age_ordering,
       bool (*priority_func)(U lhs, U rhs));
-  static bool sort_warps_by_oldest_dynamic_id(shd_warp_t *lhs, shd_warp_t *rhs);
+  static bool sort_warps_by_oldest_dynamic_id(shd_warp_t *lhs, shd_warp_t *rhs); 
+  static bool sort_warps_by_kaws(shd_warp_t *lhs, shd_warp_t *rhs);
+     
 
   // Derived classes can override this function to populate
   // m_supervised_warps with their scheduling policies
@@ -557,6 +583,25 @@ class swl_scheduler : public scheduler_unit {
  protected:
   scheduler_prioritization_type m_prioritization;
   unsigned m_num_warps_to_limit;
+}; 
+
+class kaws_scheduler : public scheduler_unit {
+ public:
+  kaws_scheduler(shader_core_stats *stats, shader_core_ctx *shader,
+                Scoreboard *scoreboard, simt_stack **simt,
+                std::vector<shd_warp_t *> *warp, register_set *sp_out,
+                register_set *dp_out, register_set *sfu_out,
+                register_set *int_out, register_set *tensor_core_out,
+                std::vector<register_set *> &spec_cores_out,
+                register_set *mem_out, int id)
+      : scheduler_unit(stats, shader, scoreboard, simt, warp, sp_out, dp_out,
+                       sfu_out, int_out, tensor_core_out, spec_cores_out,
+                       mem_out, id) {}
+  virtual ~kaws_scheduler() {}
+  virtual void order_warps();
+  virtual void done_adding_supervised_warps() {
+    m_last_supervised_issued = m_supervised_warps.begin();
+  }
 };
 
 class opndcoll_rfu_t {  // operand collector based register file unit
@@ -1874,7 +1919,8 @@ class shader_core_mem_fetch_allocator : public mem_fetch_allocator {
 
 class shader_core_ctx : public core_t {
  public:
-  // creator:
+  // creator: 
+  unsigned cta_progress[MAX_CTA_PER_SHADER]; //added for knowing cta progress 
   shader_core_ctx(class gpgpu_sim *gpu, class simt_core_cluster *cluster,
                   unsigned shader_id, unsigned tpc_id,
                   const shader_core_config *config,

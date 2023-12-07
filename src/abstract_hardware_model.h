@@ -1299,13 +1299,27 @@ class register_set {
     }
     return false;
   }
-  bool has_free(bool sub_core_model, unsigned reg_id) {
+  /*bool has_free(bool sub_core_model, unsigned reg_id) {
     // in subcore model, each sched has a one specific reg to use (based on
     // sched id)
     if (!sub_core_model) return has_free();
 
     assert(reg_id < regs.size());
     return regs[reg_id]->empty();
+  }*/ 
+  bool has_free(bool sub_core_model, unsigned reg_id, unsigned *scheduler) {
+    // in subcore model, each scheduler has a one specific reg to use (based on
+    // scheduler id)
+    if (!sub_core_model) return has_free();
+
+    assert(reg_id < regs.size());
+    for (int i = 0;i < regs.size();i++) {
+      if (regs[(reg_id+i)%regs.size()]->empty()) {
+        *scheduler = (reg_id+i)%regs.size();
+        return true;
+      }
+    }
+    return false;
   }
   bool has_ready() {
     for (unsigned i = 0; i < regs.size(); i++) {

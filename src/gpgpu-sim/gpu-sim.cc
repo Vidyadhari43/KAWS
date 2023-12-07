@@ -1573,7 +1573,8 @@ unsigned exec_shader_core_ctx::sim_init_thread(
                              num_threads, core, hw_cta_id, hw_warp_id, gpu);
 }
 
-void shader_core_ctx::issue_block2core(kernel_info_t &kernel) {
+void 
+shader_core_ctx::issue_block2core(kernel_info_t &kernel) {
   if (!m_config->gpgpu_concurrent_kernel_sm)
     set_max_cta(kernel);
   else
@@ -1588,10 +1589,13 @@ void shader_core_ctx::issue_block2core(kernel_info_t &kernel) {
   if (!m_config->gpgpu_concurrent_kernel_sm)
     max_cta_per_core = kernel_max_cta_per_shader;
   else
-    max_cta_per_core = m_config->max_cta_per_core;
+    max_cta_per_core = m_config->max_cta_per_core; 
+    fprintf(stderr,"Max cta per core -%u kernel_max_cta_per_shader-%u m_config->max_cta_per_core-%u\n",max_cta_per_core,kernel_max_cta_per_shader,m_config->max_cta_per_core);
   for (unsigned i = 0; i < max_cta_per_core; i++) {
-    if (m_cta_status[i] == 0) {
+    if (m_cta_status[i] == 0) { 
+        cta_progress[i]=0;//added for updating cta progress
       free_cta_hw_id = i;
+      
       break;
     }
   }
@@ -1599,6 +1603,7 @@ void shader_core_ctx::issue_block2core(kernel_info_t &kernel) {
 
   // determine hardware threads and warps that will be used for this CTA
   int cta_size = kernel.threads_per_cta();
+  fprintf(stderr,"cta_size-%u\n",cta_size);
 
   // hw warp id = hw thread id mod warp size, so we need to find a range
   // of hardware thread ids corresponding to an integral number of hardware
@@ -1678,7 +1683,10 @@ void shader_core_ctx::issue_block2core(kernel_info_t &kernel) {
   // initialize the SIMT stacks and fetch hardware
   init_warps(free_cta_hw_id, start_thread, end_thread, ctaid, cta_size, kernel);
   m_n_active_cta++;
-
+if(kernel. no_more_ctas_to_run() ) 
+{
+   fprintf(stderr,"Last cta detected\n"); //printing after last cta detected
+}
   shader_CTA_count_log(m_sid, 1);
   SHADER_DPRINTF(LIVENESS,
                  "GPGPU-Sim uArch: cta:%2u, start_tid:%4u, end_tid:%4u, "
@@ -1727,7 +1735,9 @@ void gpgpu_sim::issue_block2core() {
   for (unsigned i = 0; i < m_shader_config->n_simt_clusters; i++) {
     unsigned idx = (i + last_issued + 1) % m_shader_config->n_simt_clusters;
     unsigned num = m_cluster[idx]->issue_block2core();
+    
     if (num) {
+    fprintf(stderr,"cluster_idx-%u, num_blocks_issued-%u, m_shader_config->n_simt_clusters-%u\n",idx,num,m_shader_config->n_simt_clusters);
       m_last_cluster_issue = idx;
       m_total_cta_launched += num;
     }
